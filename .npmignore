@@ -1,0 +1,25 @@
+# TypeScript source files (not needed in npm package)
+src/
+*.ts
+*.tsx
+*.spec.ts
+*.spec.tsx
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+*.iml
+*.swp
+*.swo
+*.bak
+
+# Local environment configs
+.env
+.env.*
