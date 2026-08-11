@@ -2,75 +2,104 @@
 
 package com.shadahmad7.reactnativedevicesecurity
 
-import android.content.Context
+import android.os.Build
 import java.io.File
 
 object RootDetection {
 
-    fun isRooted(context: Context): Boolean {
+    fun isRooted(packageManager: android.content.pm.PackageManager): Boolean {
         return try {
-            checkDangerousPaths() ||
+            checkRootManagementApps(packageManager) ||
+                checkDangerousProps() ||
                 checkSuBinary() ||
-                checkTestKeys() ||
-                checkRootManagementApps(context)
-        } catch (error: Throwable) {
+                checkSuCommand() ||
+                checkWritableSystemDirectories()
+        } catch (e: Exception) {
             throw ReactNativeDeviceSecurityException(
-                code = ReactNativeDeviceSecurityException.DETECTION_FAILED,
-                message = "Failed to determine root status.",
-                cause = error,
+                "Failed to detect root status.",
+                e
             )
         }
     }
-
-    private fun checkDangerousPaths(): Boolean {
-        val paths = listOf(
-            "/system/app/Superuser.apk",
-            "/sbin/su",
-            "/system/bin/su",
-            "/system/xbin/su",
-            "/data/local/xbin/su",
-            "/data/local/bin/su",
-            "/system/sd/xbin/su",
-            "/system/bin/failsafe/su",
-            "/data/local/su",
-            "/su/bin/su",
+    
+    private fun checkRootManagementApps(
+        packageManager: android.content.pm.PackageManager
+    ): Boolean {
+        val packages = listOf(
+            "com.noshufou.android.su",
+            "com.noshufou.android.su.elite",
+            "eu.chainfire.supersu",
+            "com.koushikdutta.superuser",
+            "com.thirdparty.superuser",
+            "com.yellowes.su",
+            "com.topjohnwu.magisk"
         )
 
-        return paths.any { File(it).exists() }
+        return packages.any { packageName ->
+            try {
+                packageManager.getPackageInfo(packageName, 0)
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+
+    private fun checkDangerousProps(): Boolean {
+        return try {
+            val buildTags = Build.TAGS.orEmpty()
+
+            buildTags.contains("test-keys")
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun checkSuBinary(): Boolean {
+        val paths = arrayOf(
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/sbin/su",
+            "/system/su",
+            "/system/bin/.ext/su",
+            "/system/usr/we-need-root/su",
+            "/system/xbin/mu",
+            "/vendor/bin/su",
+            "/data/local/su",
+            "/data/local/bin/su",
+            "/data/local/xbin/su"
+        )
+
+        return paths.any { path ->
+            File(path).exists()
+        }
+    }
+
+    private fun checkSuCommand(): Boolean {
         return try {
             Runtime.getRuntime()
                 .exec(arrayOf("which", "su"))
                 .inputStream
                 .bufferedReader()
                 .readLine() != null
-        } catch (_: Throwable) {
+        } catch (_: Exception) {
             false
         }
     }
-    
-    private fun checkTestKeys(): Boolean {
-        return Build.TAGS?.contains("test-keys") == true
-    }
 
-    private fun checkRootManagementApps(context: Context): Boolean {
-        val suspiciousPackages = listOf(
-            "com.topjohnwu.magisk",
-            "eu.chainfire.supersu",
-            "com.koushikdutta.superuser",
-            "com.noshufou.android.su",
-            "com.thirdparty.superuser",
+    private fun checkWritableSystemDirectories(): Boolean {
+        val directories = listOf(
+            "/system",
+            "/system/bin",
+            "/system/sbin",
+            "/system/xbin",
+            "/vendor/bin",
+            "/sbin"
         )
 
-        return suspiciousPackages.any { packageName ->
+        return directories.any { path ->
             try {
-                context.packageManager.getPackageInfo(
-                    packageName,
-                    0,
-                )
-                true
+                File(path).canWrite()
             } catch (_: Exception) {
                 false
             }

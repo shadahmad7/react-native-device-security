@@ -2,37 +2,49 @@
 
 package com.shadahmad7.reactnativedevicesecurity
 
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 
 class ReactNativeDeviceSecurityModule(
-  reactContext: ReactApplicationContext
+    reactContext: ReactApplicationContext
 ) : NativeReactNativeDeviceSecuritySpec(reactContext) {
 
-  override fun getSecurityStatus(promise: Promise) {
-    try {
-      val isRooted = RootDetection.isRooted()
-      val isEmulator = EmulatorDetection.isEmulator()
+    override fun getSecurityStatus(promise: Promise) {
+        try {
+            val isRooted = RootDetection.isRooted(
+                reactApplicationContext.packageManager
+            )
 
-      val status = Arguments.createMap().apply {
-        putBoolean("isCompromised", isRooted)
-        putBoolean("isRooted", isRooted)
-        putBoolean("isJailbroken", false)
-        putBoolean("isEmulator", isEmulator)
-      }
+            val isEmulator = EmulatorDetection.isEmulator()
 
-      promise.resolve(status)
-    } catch (e: Exception) {
-      promise.reject(
-        "DEVICE_SECURITY_DETECTION_FAILED",
-        ReactNativeDeviceSecurityException.detectionFailed,
-        e
-      )
+            val status = com.facebook.react.bridge.Arguments.createMap().apply {
+                putBoolean("isCompromised", isRooted)
+                putBoolean("isRooted", isRooted)
+                putBoolean("isJailbroken", false)
+                putBoolean("isEmulator", isEmulator)
+            }
+
+            promise.resolve(status)
+        } catch (e: ReactNativeDeviceSecurityException) {
+            promise.reject(
+                "DEVICE_SECURITY_DETECTION_FAILED",
+                e.message,
+                e
+            )
+        } catch (e: Exception) {
+            promise.reject(
+                "DEVICE_SECURITY_DETECTION_FAILED",
+                "Unable to determine device security status.",
+                e
+            )
+        }
     }
-  }
 
-  companion object {
-    const val NAME = "ReactNativeDeviceSecurity"
-  }
+    override fun getName(): String {
+        return NAME
+    }
 
-  override fun getName(): String = NAME
+    companion object {
+        const val NAME = "ReactNativeDeviceSecurity"
+    }
 }

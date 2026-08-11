@@ -8,30 +8,32 @@ object EmulatorDetection {
 
     fun isEmulator(): Boolean {
         return try {
-            checkEmulator()
-        } catch (error: Throwable) {
+            val fingerprint = Build.FINGERPRINT.orEmpty()
+            val model = Build.MODEL.orEmpty()
+            val manufacturer = Build.MANUFACTURER.orEmpty()
+            val brand = Build.BRAND.orEmpty()
+            val device = Build.DEVICE.orEmpty()
+            val product = Build.PRODUCT.orEmpty()
+            val hardware = Build.HARDWARE.orEmpty()
+
+            fingerprint.startsWith("generic") ||
+                fingerprint.startsWith("unknown") ||
+                fingerprint.contains("emulator", ignoreCase = true) ||
+                model.contains("google_sdk", ignoreCase = true) ||
+                model.contains("emulator", ignoreCase = true) ||
+                model.contains("android sdk", ignoreCase = true) ||
+                manufacturer.contains("Genymotion", ignoreCase = true) ||
+                brand.startsWith("generic") ||
+                device.startsWith("generic") ||
+                product.contains("sdk", ignoreCase = true) ||
+                product.contains("emulator", ignoreCase = true) ||
+                hardware.contains("goldfish", ignoreCase = true) ||
+                hardware.contains("ranchu", ignoreCase = true)
+        } catch (e: Exception) {
             throw ReactNativeDeviceSecurityException(
-                code = ReactNativeDeviceSecurityException.DETECTION_FAILED,
-                message = "Failed to determine emulator status.",
-                cause = error,
+                "Failed to detect emulator status.",
+                e
             )
         }
-    }
-
-    private fun checkEmulator(): Boolean {
-        return (
-            Build.FINGERPRINT.startsWith("generic") ||
-                Build.FINGERPRINT.startsWith("unknown") ||
-                Build.MODEL.contains("google_sdk") ||
-                Build.MODEL.contains("Emulator") ||
-                Build.MODEL.contains("Android SDK built for x86") ||
-                Build.MANUFACTURER.contains("Genymotion") ||
-                (
-                    Build.BRAND.startsWith("generic") &&
-                        Build.DEVICE.startsWith("generic")
-                ) ||
-                Build.PRODUCT.contains("sdk") ||
-                Build.PRODUCT.contains("emulator")
-        )
     }
 }
