@@ -1,3 +1,5 @@
+// EmulatorDetection.kt
+
 package com.shadahmad7.reactnativedevicesecurity
 
 import android.os.Build
@@ -24,10 +26,12 @@ object EmulatorDetection {
                 Build.MODEL.contains("Emulator") ||
                 Build.MODEL.contains("Android SDK built for x86") ||
                 Build.MANUFACTURER.contains("Genymotion") ||
-                Build.BRAND.startsWith("generic") &&
-                    Build.DEVICE.startsWith("generic") ||
+                (
+                    Build.BRAND.startsWith("generic") &&
+                        Build.DEVICE.startsWith("generic")
+                ) ||
                 Build.PRODUCT.contains("sdk") ||
                 Build.PRODUCT.contains("emulator")
-            )
+        )
     }
 }

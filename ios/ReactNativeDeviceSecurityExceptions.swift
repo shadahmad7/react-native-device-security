@@ -1,18 +1,16 @@
+// ReactNativeDeviceSecurityExceptions.swift
+
 import Foundation
 
 enum ReactNativeDeviceSecurityError: Error {
-    case unableToDetermineSecurityStatus
-    case invalidSecurityStatus
+  case detectionFailed
 }
 
 extension ReactNativeDeviceSecurityError: LocalizedError {
-    var errorDescription: String? {
-        switch self {
-        case .unableToDetermineSecurityStatus:
-            return "Unable to determine device security status."
-
-        case .invalidSecurityStatus:
-            return "Invalid device security status."
-        }
+  var errorDescription: String? {
+    switch self {
+    case .detectionFailed:
+      return "Unable to determine device security status."
     }
+  }
 }

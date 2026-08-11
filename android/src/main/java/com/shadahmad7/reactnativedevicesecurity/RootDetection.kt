@@ -1,3 +1,5 @@
+// RootDetection.kt
+
 package com.shadahmad7.reactnativedevicesecurity
 
 import android.content.Context
@@ -48,7 +50,7 @@ object RootDetection {
             false
         }
     }
-
+    
     private fun checkTestKeys(): Boolean {
         return Build.TAGS?.contains("test-keys") == true
     }

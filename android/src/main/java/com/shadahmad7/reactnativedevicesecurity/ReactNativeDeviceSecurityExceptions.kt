@@ -1,12 +1,13 @@
+// ReactNativeDeviceSecurityExceptions.kt
+
 package com.shadahmad7.reactnativedevicesecurity
 
 class ReactNativeDeviceSecurityException(
-    val code: String,
-    override val message: String,
-    cause: Throwable? = null,
-) : Exception(message, cause) {
+  message: String
+) : Exception(message) {
 
-    companion object {
-        const val DETECTION_FAILED = "DEVICE_SECURITY_DETECTION_FAILED"
-    }
+  companion object {
+    const val detectionFailed =
+      "Unable to determine device security status."
+  }
 }
