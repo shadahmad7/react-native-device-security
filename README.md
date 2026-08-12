@@ -1,75 +1,60 @@
-# **@shadahmad7/react-native-device-security**
+# @shadahmad7/react-native-device-security
 
-A lightweight, fully-native **Device Security TurboModule** for React Native CLI applications.
+A lightweight, native **device security detection TurboModule** for React Native CLI applications.
 
-This module provides native device security checks for **Android and iOS**, allowing your React Native application to detect potentially compromised environments such as rooted devices, jailbroken devices, and emulators.
+`@shadahmad7/react-native-device-security` provides a single JavaScript API for detecting common indicators of potentially compromised environments on **Android and iOS**.
 
-⚡ **TurboModule + Native Kotlin & Swift**
+It performs the checks locally on the device and **does not require a backend or server-side integration**.
 
-📱 **iOS & Android Support**
+> **Security note:** Root/jailbreak detection is a security signal, not a guarantee of device integrity. A sufficiently modified device may bypass detection mechanisms.
 
-🏗️ **New Architecture Ready**
+## Features
 
-🔒 **Fully Native Device Checks**
+- Native Android implementation using Kotlin
+- Native iOS implementation using Swift
+- Android root detection
+- iOS jailbreak detection
+- Android emulator detection
+- iOS simulator detection
+- Unified security status returned to JavaScript
+- No backend integration required
+- No Expo dependency
+- React Native TurboModule interface
+- Designed for React Native New Architecture
+- Platform-specific implementation behind one JavaScript API
 
-🎯 **Single API for React Native**
-
----
-
-## 🚀 Features
-
-* Fully native React Native TurboModule
-* Supports **React Native New Architecture**
-* Supports **Android and iOS**
-* Detects **rooted Android devices**
-* Detects **jailbroken iOS devices**
-* Detects **emulators/simulators**
-* Provides a unified security status API
-* No backend or server-side integration required
-* No additional UI maintenance
-* Native implementation for platform-specific checks
-* Returns a simple security status object to JavaScript
-
----
-
-## 📦 Installation
+## Installation
 
 ```bash
 npm install @shadahmad7/react-native-device-security
 ```
 
-or
+or:
 
 ```bash
 yarn add @shadahmad7/react-native-device-security
 ```
 
-For iOS, install CocoaPods dependencies:
+For iOS:
 
 ```bash
 cd ios
 pod install
 ```
 
----
+Then rebuild the application.
 
-## 💻 Usage
-
-Import the module:
+## Usage
 
 ```tsx
 import DeviceSecurity from '@shadahmad7/react-native-device-security';
+
+const status = await DeviceSecurity.getSecurityStatus();
+
+console.log(status);
 ```
 
-You can retrieve the security status using:
-
-```tsx
-const securityStatus = await DeviceSecurity.getSecurityStatus();
-
-console.log(securityStatus);
-```
-
-Example response:
+Example:
 
 ```ts
 {
@@ -80,77 +65,15 @@ Example response:
 }
 ```
 
----
+## API
 
-## 🔐 Security Status
-
-The module exposes four security indicators.
-
-### `isCompromised`
-
-Indicates whether the device is considered potentially compromised.
-
-This value is `true` when one or more security checks identify a potentially compromised environment, such as:
-
-* Rooted Android device
-* Jailbroken iOS device
-* Emulator/simulator
-
-```tsx
-if (securityStatus.isCompromised) {
-  // Handle potentially compromised environment
-}
-```
-
-### `isRooted`
-
-Indicates whether the Android device is detected as rooted.
-
-```tsx
-if (securityStatus.isRooted) {
-  // Android root detected
-}
-```
-
-On iOS this value is always:
+### `getSecurityStatus()`
 
 ```ts
-false
+getSecurityStatus(): Promise<DeviceSecurityStatus>
 ```
 
-### `isJailbroken`
-
-Indicates whether the iOS device is detected as jailbroken.
-
-```tsx
-if (securityStatus.isJailbroken) {
-  // iOS jailbreak detected
-}
-```
-
-On Android this value is always:
-
-```ts
-false
-```
-
-### `isEmulator`
-
-Indicates whether the application is running in an emulator or simulator environment.
-
-```tsx
-if (securityStatus.isEmulator) {
-  // Emulator/simulator detected
-}
-```
-
----
-
-## 📚 API
-
-### `getSecurityStatus(): Promise<DeviceSecurityStatus>`
-
-Returns the security status of the current device.
+The returned object is:
 
 ```ts
 type DeviceSecurityStatus = {
@@ -161,31 +84,64 @@ type DeviceSecurityStatus = {
 };
 ```
 
+### `isCompromised`
+
+A convenience flag indicating that one of the supported compromise/environment checks has been triggered.
+
+For the current implementation, this can include:
+
+- Android root detection
+- iOS jailbreak detection
+
+**Emulator/simulator detection is exposed separately through `isEmulator` and is not included in `isCompromised`.**
+
 Example:
 
 ```tsx
 const status = await DeviceSecurity.getSecurityStatus();
 
 if (status.isCompromised) {
-  console.warn('Potentially compromised device');
+  // Handle potentially compromised device.
 }
 ```
 
----
+### `isRooted`
 
-## 🤖 Android
+Indicates whether Android root indicators were detected.
 
-The Android implementation performs native security checks for:
+On iOS this is always:
 
-* Root access
-* Root-related indicators
-* Emulator detection
+```ts
+false
+```
 
-The checks are implemented natively using **Kotlin**.
+### `isJailbroken`
 
-The Android module follows the React Native TurboModule architecture and exposes the security status through the JavaScript API.
+Indicates whether iOS jailbreak indicators were detected.
 
-### Android result
+On Android this is always:
+
+```ts
+false
+```
+
+### `isEmulator`
+
+Indicates whether the application is running in an emulator/simulator environment.
+
+This is useful for testing and for applications that need to distinguish physical devices from virtual environments.
+
+## Platform behavior
+
+### Android
+
+The Android implementation performs native checks for:
+
+- Root indicators
+- Root-related files/configuration
+- Emulator indicators
+
+Result:
 
 ```ts
 {
@@ -196,18 +152,14 @@ The Android module follows the React Native TurboModule architecture and exposes
 }
 ```
 
----
+### iOS
 
-## 🍎 iOS
+The iOS implementation performs native checks for:
 
-The iOS implementation performs native security checks for:
+- Jailbreak indicators
+- Simulator environment
 
-* Jailbreak detection
-* Simulator detection
-
-The checks are implemented natively using **Swift**.
-
-### iOS result
+Result:
 
 ```ts
 {
@@ -218,63 +170,39 @@ The checks are implemented natively using **Swift**.
 }
 ```
 
----
+## Recommended application architecture
 
-## 🏗️ Architecture
+For an application that needs to use device security throughout the app, it is recommended to call the native module once from a centralized React Context/provider.
 
-The library exposes a single JavaScript API while keeping platform-specific security logic native.
-
-```text
-React Native Application
-          │
-          ▼
-DeviceSecurity.getSecurityStatus()
-          │
-          ▼
-   TurboModule Interface
-          │
-     ┌────┴────┐
-     ▼         ▼
- Android      iOS
-   Kotlin     Swift
-     │         │
-     ▼         ▼
-Root/Emulator Jailbreak/Simulator
- Detection      Detection
-     │         │
-     └────┬────┘
-          ▼
-   DeviceSecurityStatus
-```
-
-This keeps security-related logic in one dedicated library while allowing the application to consume a consistent API.
-
----
-
-## 🧩 React Native Context Integration
-
-The library can be used with a React Context to keep device-security handling centralized in your application.
-
-For example:
+Example:
 
 ```tsx
-import DeviceSecurity from '@shadahmad7/react-native-device-security';
-import React, { useEffect, useMemo, useState } from 'react';
+import DeviceSecurity, {
+  type DeviceSecurityStatus,
+} from '@shadahmad7/react-native-device-security';
+import React, {useEffect, useMemo, useState} from 'react';
 
-export const CheckRootedDeviceProvider = ({
+const initialStatus: DeviceSecurityStatus = {
+  isCompromised: false,
+  isRooted: false,
+  isJailbroken: false,
+  isEmulator: false,
+};
+
+export const DeviceSecurityProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [securityStatus, setSecurityStatus] = useState({
-    isCompromised: false,
-    isRooted: false,
-    isJailbroken: false,
-    isEmulator: false,
-  });
+  const [securityStatus, setSecurityStatus] =
+    useState<DeviceSecurityStatus>(initialStatus);
 
   useEffect(() => {
-    DeviceSecurity.getSecurityStatus().then(setSecurityStatus);
+    DeviceSecurity.getSecurityStatus()
+      .then(setSecurityStatus)
+      .catch(() => {
+        // Handle detection failure according to application policy.
+      });
   }, []);
 
   const value = useMemo(
@@ -286,65 +214,119 @@ export const CheckRootedDeviceProvider = ({
   );
 
   return (
-    <CheckRootedDeviceContext.Provider value={value}>
+    <DeviceSecurityContext.Provider value={value}>
       {children}
-    </CheckRootedDeviceContext.Provider>
+    </DeviceSecurityContext.Provider>
   );
 };
 ```
 
-This allows the application to keep all device-security handling in a single place instead of performing native checks throughout the application.
+This keeps device-security checks in one place instead of calling native detection logic throughout the application.
 
----
+## Security considerations
 
-## ⚠️ Important Security Considerations
+This library is intended to provide **local device-security signals**.
 
-Device compromise detection should be treated as a **security signal**, not as an absolute guarantee.
+It should not be considered a replacement for stronger platform integrity mechanisms.
 
-Rooting and jailbreaking techniques can evolve, and sufficiently modified devices may be able to bypass individual detection mechanisms.
+Root and jailbreak detection can be bypassed by:
 
-For this reason:
+- Modified operating systems
+- Runtime hooking
+- Instrumentation
+- Concealment/root-hiding tools
+- Reverse engineering
+- Changes to detection indicators
 
-* Do not treat detection as cryptographic proof of device integrity.
-* Avoid relying on a single detection technique.
-* Use multiple native indicators where appropriate.
-* Consider the result as one signal in your application's security model.
-* Avoid exposing sensitive security logic unnecessarily to JavaScript.
+Therefore:
 
-This library performs local device checks and does **not require backend integration**.
+- Do not treat `isCompromised === false` as proof that a device is secure.
+- Do not rely on a single security check for high-risk operations.
+- Use multiple independent signals when appropriate.
+- Keep sensitive security decisions out of JavaScript where practical.
+- Apply your application's own security policy to the returned status.
 
----
+The library does not transmit device-security information to a backend.
 
-## 🧪 Testing
+## Testing
 
 ### Android
 
-Root detection should be tested on:
+You can test emulator detection using an Android Emulator.
 
-* Standard physical Android devices
-* Rooted Android devices
-* Android emulators
-* Different Android versions
+For root detection, use a physical rooted Android device or an appropriately configured rooted test environment.
+
+A normal non-rooted Android device should return:
+
+```ts
+{
+  isRooted: false
+}
+```
+
+An emulator may return:
+
+```ts
+{
+  isEmulator: true
+}
+```
+
+Whether root detection succeeds depends on the emulator image and its configuration.
 
 ### iOS
 
-Jailbreak detection should be tested on:
+You can test simulator detection using the iOS Simulator.
 
-* Standard physical iOS devices
-* Jailbroken devices where available
-* iOS Simulator
+The simulator should report:
 
-Note that simulator/emulator detection is intentionally reported through `isEmulator`.
+```ts
+{
+  isEmulator: true
+}
+```
 
----
+Jailbreak detection requires a jailbroken physical iOS device. A normal physical iPhone cannot be used to simulate a real jailbreak state.
 
-## 🔧 Native Implementation
+For production validation, test the library on:
+
+- A normal physical Android device
+- A normal physical iOS device
+- Android Emulator
+- iOS Simulator
+- Rooted Android test device, when available
+- Jailbroken iOS test device, when available
+
+## Architecture
+
+The library exposes one JavaScript API while keeping platform-specific detection native.
+
+```text
+React Native Application
+          |
+          v
+DeviceSecurity.getSecurityStatus()
+          |
+          v
+    TurboModule API
+       /      \
+      /        \
+ Android       iOS
+  Kotlin      Swift
+    |           |
+    v           v
+Root +       Jailbreak +
+Emulator     Simulator
+Detection    Detection
+    \           /
+     \         /
+      v       v
+   DeviceSecurityStatus
+```
+
+## Native source structure
 
 ### Android
-
-Native implementation is written in **Kotlin**.
-
-Main components include:
 
 ```text
 android/
@@ -358,8 +340,6 @@ android/
 
 ### iOS
 
-Native implementation is written in **Swift** with the React Native Objective-C bridge/specification.
-
 ```text
 ios/
 ├── ReactNativeDeviceSecurity.swift
@@ -368,17 +348,20 @@ ios/
 └── RNReactNativeDeviceSecuritySpec.h
 ```
 
----
+## React Native architecture
 
-## 📦 Supported React Native Architecture
-
-The library is designed as a React Native TurboModule and supports the **New Architecture**.
-
-The JavaScript specification is defined using:
+The module exposes its native API through a TurboModule specification:
 
 ```ts
-import type { TurboModule } from 'react-native';
-import { TurboModuleRegistry } from 'react-native';
+import type {TurboModule} from 'react-native';
+import {TurboModuleRegistry} from 'react-native';
+
+export type DeviceSecurityStatus = {
+  isCompromised: boolean;
+  isRooted: boolean;
+  isJailbroken: boolean;
+  isEmulator: boolean;
+};
 
 export interface Spec extends TurboModule {
   getSecurityStatus(): Promise<DeviceSecurityStatus>;
@@ -389,65 +372,67 @@ export default TurboModuleRegistry.getEnforcing<Spec>(
 );
 ```
 
----
+The native implementations are platform-specific while the JavaScript API remains consistent.
 
-## 🎯 Example
+## Compatibility
 
-A typical application flow can be:
+The package is intended for React Native CLI applications and supports Android and iOS through native implementations.
 
-```tsx
-const status = await DeviceSecurity.getSecurityStatus();
+For the exact React Native versions supported by a published package version, refer to its `peerDependencies`.
 
-if (status.isCompromised) {
-  // Show security warning or restrict sensitive functionality.
-  return;
-}
-
-// Continue normal application flow.
-```
-
----
-
-## ❓ FAQ
+## FAQ
 
 ### Does this require a backend?
 
-**No.**
+No.
 
-All checks are performed locally on the device using native Android and iOS implementations.
+All detection is performed locally on the device.
 
-### Does it work on both Android and iOS?
-
-Yes.
-
-The JavaScript API is shared while the underlying detection logic is platform-specific.
-
-### Can it detect every rooted or jailbroken device?
-
-No detection mechanism can guarantee that every compromised device will be identified.
-
-The result should be treated as a security signal rather than an absolute guarantee.
-
-### Does it require Expo?
+### Does this require Expo?
 
 No.
 
-This is designed for **React Native CLI applications**.
+The package is intended for React Native CLI applications.
 
-### Does it require a third-party backend?
+### Does `isCompromised` include emulators?
 
 No.
 
-The library performs the checks locally.
+Emulator/simulator status is exposed separately through `isEmulator`.
 
-### Can I use the result from React Context?
+This separation allows applications to distinguish between:
 
-Yes.
+- A potentially compromised physical device
+- A development/test virtual environment
 
-The recommended application architecture is to call the native module from a centralized provider/context and expose the resulting security state to the rest of the application.
+### Can root/jailbreak detection detect every compromised device?
 
----
+No.
 
-## 📄 License
+No local detection mechanism can guarantee detection of every compromised environment.
 
-**MIT © Shad Ahmad**
+### Can I test root detection on a normal Android Emulator?
+
+Not necessarily.
+
+Emulator detection and root detection are separate checks. A standard emulator can be detected as an emulator without necessarily being detected as rooted.
+
+For meaningful root-detection testing, use a rooted test device or a deliberately configured rooted test environment.
+
+### Can I test jailbreak detection on iOS Simulator?
+
+No.
+
+The simulator can test simulator detection, but it does not represent a jailbroken physical iPhone.
+
+A jailbroken physical device is required for real jailbreak-detection testing.
+
+### Does the library send data anywhere?
+
+No.
+
+The library itself does not send device-security information to a backend.
+
+## License
+
+MIT © Shad Ahmad
