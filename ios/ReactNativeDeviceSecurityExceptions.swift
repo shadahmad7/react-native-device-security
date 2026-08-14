@@ -7,6 +7,7 @@ enum ReactNativeDeviceSecurityError: Error {
 }
 
 extension ReactNativeDeviceSecurityError: LocalizedError {
+
   var errorDescription: String? {
     switch self {
     case .detectionFailed:
