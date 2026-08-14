@@ -5,7 +5,7 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "react-native": "dist/index.js",
-  "description": "React Native Store Review TurboModule for iOS and Android. This library provides a fully native API to trigger in-app review dialogs using Google Play In-App Review and Apple's SKStoreReviewController, without requiring Expo or additional UI. Lightweight, production-ready, and easy to integrate.",
+  "description": "A lightweight React Native TurboModule for detecting device security risks on iOS and Android. Provides native root, jailbreak, emulator, and simulator detection through a unified JavaScript API, with detailed Android root checks and platform-specific native implementations. Supports React Native New and Legacy Architectures without Expo or backend integration.",
   "license": "MIT",
   "author": "Shad Ahmad",
   "homepage": "https://github.com/shadahmad7/react-native-device-security#readme",
