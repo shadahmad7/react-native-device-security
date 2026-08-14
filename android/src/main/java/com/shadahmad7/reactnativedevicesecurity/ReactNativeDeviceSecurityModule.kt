@@ -27,7 +27,7 @@ class ReactNativeDeviceSecurityModule(
             val status = Arguments.createMap().apply {
                 putBoolean(
                     "isCompromised",
-                    isRooted || isEmulator
+                    isRooted
                 )
                 putBoolean("isRooted", isRooted)
                 putBoolean("isJailbroken", false)

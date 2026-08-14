@@ -275,13 +275,13 @@ For the current implementation:
 ### Android
 
 ```text
-isCompromised = isRooted || isEmulator
+isCompromised = isRooted
 ```
 
 ### iOS
 
 ```text
-isCompromised = isJailbroken || isEmulator
+isCompromised = isJailbroken
 ```
 
 Use the individual properties if your application needs separate policies for compromised physical devices and virtual environments.
@@ -760,18 +760,18 @@ The package is intended for React Native CLI applications.
 
 ### Does `isCompromised` include emulators?
 
-Yes, in the current implementation.
+No, in the current implementation.
 
 Android:
 
 ```text
-isCompromised = isRooted || isEmulator
+isCompromised = isRooted
 ```
 
 iOS:
 
 ```text
-isCompromised = isJailbroken || isEmulator
+isCompromised = isJailbroken
 ```
 
 Use the individual properties if your application needs different policies.

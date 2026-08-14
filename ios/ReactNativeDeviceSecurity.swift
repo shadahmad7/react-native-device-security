@@ -18,7 +18,7 @@ class ReactNativeDeviceSecurity: NSObject {
       let isEmulator = EmulatorDetection.isEmulator()
 
       let status: [String: Any] = [
-        "isCompromised": isJailbroken || isEmulator,
+        "isCompromised": isJailbroken,
         "isRooted": false,
         "isJailbroken": isJailbroken,
         "isEmulator": isEmulator
