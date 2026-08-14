@@ -97,7 +97,7 @@ class ReactNativeDeviceSecurity: NSObject {
         EmulatorDetection.isEmulator()
 
       resolve(
-        isJailbroken || isEmulator
+        isJailbroken
       )
     } catch {
       rejectDetectionFailure(

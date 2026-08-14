@@ -109,7 +109,7 @@ class ReactNativeDeviceSecurityModule(
                 EmulatorDetection.isEmulator()
 
             promise.resolve(
-                isRooted || isEmulator
+                isRooted
             )
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
