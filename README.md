@@ -1,62 +1,101 @@
 # @shadahmad7/react-native-device-security
 
-A lightweight, native **device security detection TurboModule** for React Native CLI applications.
+A lightweight, native **device security detection TurboModule for React Native CLI applications**, providing **OWASP-focused root and jailbreak detection** for Android and iOS.
 
-`@shadahmad7/react-native-device-security` provides a unified JavaScript API for detecting common indicators of potentially compromised or virtualized environments on **Android and iOS**.
+`@shadahmad7/react-native-device-security` provides a unified JavaScript API for detecting common indicators of potentially compromised or virtualized environments, including:
+
+* Android root detection
+* iOS jailbreak detection
+* Android emulator detection
+* iOS simulator detection
+
+The Android root-detection implementation uses multiple independent native security checks based on security-resilience practices described by the **OWASP Mobile Application Security Testing Guide (MASTG)**.
 
 All detection is performed locally using native Kotlin and Swift implementations.
 
 The library does **not require a backend or server-side integration**.
 
-> **Security note:** Root, jailbreak, debugger, and runtime-instrumentation detection are security signals, not guarantees of device integrity. A sufficiently modified device may bypass local detection mechanisms.
+> **Security note:** Root, jailbreak, emulator, and simulator detection are security signals, not guarantees of device integrity. A sufficiently modified device may bypass local detection mechanisms.
 
-## Features
+---
 
-### Android
+# Features
 
-- Native Kotlin implementation
-- Root detection
-- Root-management application detection
-- `su` binary detection
-- `su` command detection
-- Writable system directory detection
-- Dangerous Android system property detection
-- Root-related file detection
-- Read-write system mount detection
-- Android build-tag inspection
-- Android emulator detection
-- Build fingerprint analysis
-- Emulator hardware detection
+## Android
 
-### iOS
+* Native Kotlin implementation
+* OWASP-focused root detection
+* Root-management application detection
+* `su` binary detection
+* `su` command detection
+* Writable system directory detection
+* Dangerous Android system property detection
+* Root-related file detection
+* Read-write system mount detection
+* Android build-tag inspection
+* Android emulator detection
+* Build fingerprint analysis
+* Emulator hardware detection
 
-- Native Swift implementation
-- Jailbreak detection
-- Cydia detection
-- Sileo detection
-- Zebra detection
-- MobileSubstrate detection
-- Suspicious filesystem artifact detection
-- Sandbox escape detection
-- iOS Simulator detection
+## iOS
 
-### Common
+* Native Swift implementation
+* Jailbreak detection
+* Cydia detection
+* Sileo detection
+* Zebra detection
+* MobileSubstrate detection
+* Suspicious filesystem artifact detection
+* Sandbox escape detection
+* iOS Simulator detection
 
-- Unified JavaScript API
-- Platform-specific native implementations
-- TurboModule specification
-- React Native New Architecture support
-- Legacy architecture compatibility
-- No backend integration
-- No Expo dependency
-- Local-only detection
-- Designed for centralized application-level security checks
+## Common
+
+* Unified JavaScript API
+* Platform-specific native implementations
+* TurboModule specification
+* React Native New Architecture support
+* Legacy architecture compatibility
+* OWASP MASTG-focused security checks
+* No backend integration
+* No Expo dependency
+* Local-only detection
+* Designed for centralized application-level security checks
+
+---
+
+# OWASP Security Approach
+
+The library is designed around **multiple independent device-security signals** rather than relying on a single root or jailbreak check.
+
+The detection strategy is informed by the **OWASP Mobile Application Security Testing Guide (MASTG)** and mobile application resilience principles.
+
+The objective is to make compromise detection more resilient by combining multiple indicators.
+
+For Android, root detection includes checks for:
+
+* Root-management applications
+* Known `su` binaries
+* `su` command availability
+* Writable system directories
+* Dangerous Android system properties
+* Root-related files and directories
+* Read-write system mounts
+* Dangerous build tags
+
+For iOS, jailbreak detection includes multiple filesystem and environment checks.
+
+> OWASP provides security guidance and testing methodologies. This library should not be interpreted as providing an absolute guarantee of device integrity or protection against all forms of compromise.
+
+See the OWASP Mobile Application Security Testing Guide:
+
+https://mas.owasp.org/MASTG/
 
 ---
 
 # Comprehensive Security Checks
 
-The library is designed around multiple independent detection signals rather than relying on a single check.
+The library uses multiple independent detection signals to reduce reliance on a single indicator.
 
 ## Android
 
@@ -64,14 +103,14 @@ The library is designed around multiple independent detection signals rather tha
 
 The Android implementation currently checks for:
 
-- Root-management applications
-- Known `su` binaries
-- `su` command availability
-- Writable system directories
-- Dangerous Android system properties
-- Root-related files and directories
-- Read-write system mounts
-- Dangerous build tags such as `test-keys`
+* Root-management applications
+* Known `su` binaries
+* `su` command availability
+* Writable system directories
+* Dangerous system properties
+* Root-related files and directories
+* Read-write system mounts
+* Dangerous build tags such as `test-keys`
 
 These checks are intentionally independent so that detection does not depend on a single indicator.
 
@@ -79,18 +118,18 @@ These checks are intentionally independent so that detection does not depend on 
 
 Android emulator detection uses native device information including:
 
-- Build fingerprint
-- Device model
-- Manufacturer
-- Brand
-- Device
-- Product
-- Hardware
-- `goldfish`
-- `ranchu`
-- Generic emulator fingerprints
-- SDK/emulator product identifiers
-- Genymotion indicators
+* Build fingerprint
+* Device model
+* Manufacturer
+* Brand
+* Device
+* Product
+* Hardware
+* `goldfish`
+* `ranchu`
+* Generic emulator fingerprints
+* SDK/emulator product identifiers
+* Genymotion indicators
 
 ---
 
@@ -100,26 +139,26 @@ Android emulator detection uses native device information including:
 
 The iOS implementation checks for multiple jailbreak indicators.
 
-#### Package Manager Detection
+### Package Manager Detection
 
 Detection includes known jailbreak package managers and applications such as:
 
-- Cydia
-- Sileo
-- Zebra
+* Cydia
+* Sileo
+* Zebra
 
-#### Suspicious Filesystem Artifacts
+### Suspicious Filesystem Artifacts
 
 Detection includes known artifacts associated with:
 
-- Cydia
-- Sileo
-- MobileSubstrate
-- SSH
-- APT
-- Jailbreak tools
+* Cydia
+* Sileo
+* MobileSubstrate
+* SSH
+* APT
+* Jailbreak tools
 
-#### Sandbox Escape
+### Sandbox Escape
 
 The implementation attempts to write to locations outside the application's normal sandbox.
 
@@ -127,7 +166,7 @@ A successful write indicates that the application's sandbox restrictions may hav
 
 ### Simulator Detection
 
-The iOS implementation uses the native:
+The implementation uses the native:
 
 ```swift
 #if targetEnvironment(simulator)
@@ -147,7 +186,9 @@ A simulator is **not** treated as a jailbroken device.
 
 # Planned Runtime Security Checks
 
-The following checks can be added as additional defense-in-depth signals.
+The following checks are planned as additional defense-in-depth security signals.
+
+These checks should **not** be considered implemented until they are added to the native implementations.
 
 ## Android
 
@@ -155,22 +196,22 @@ The following checks can be added as additional defense-in-depth signals.
 
 Planned checks include:
 
-- Java debugger detection
-- `Debug.isDebuggerConnected()`
-- `Debug.waitingForDebugger()`
-- `TracerPid` inspection
-- `ptrace`-based anti-debugging
+* Java debugger detection
+* `Debug.isDebuggerConnected()`
+* `Debug.waitingForDebugger()`
+* `TracerPid` inspection
+* `ptrace`-based anti-debugging
 
 ### Runtime Instrumentation Detection
 
 Planned checks include:
 
-- Runtime thread detection
-- `/proc` memory-map inspection
-- Suspicious loaded libraries
-- Runtime symbol inspection
-- Frida-related artifacts
-- Runtime instrumentation indicators
+* Runtime thread detection
+* `/proc` memory-map inspection
+* Suspicious loaded libraries
+* Runtime symbol inspection
+* Frida-related artifacts
+* Runtime instrumentation indicators
 
 ## iOS
 
@@ -178,22 +219,20 @@ Planned checks include:
 
 Planned checks include:
 
-- `sysctl` process inspection
-- `P_TRACED` detection
-- `ptrace` anti-debugging
+* `sysctl` process inspection
+* `P_TRACED` detection
+* `ptrace` anti-debugging
 
 ### Runtime Instrumentation Detection
 
 Planned checks include:
 
-- Injected dylib detection
-- Loaded image inspection
-- Suspicious runtime threads
-- Runtime symbol inspection
-- Frida-related indicators
-- Dynamic instrumentation indicators
-
-> These checks should only be documented as implemented after they are added to the native implementations.
+* Injected dylib detection
+* Loaded image inspection
+* Suspicious runtime threads
+* Runtime symbol inspection
+* Frida-related indicators
+* Dynamic instrumentation indicators
 
 ---
 
@@ -262,6 +301,8 @@ type DeviceSecurityStatus = {
 };
 ```
 
+---
+
 ## `isSecurityCompromised()`
 
 ```ts
@@ -269,8 +310,6 @@ isSecurityCompromised(): Promise<boolean>
 ```
 
 Returns the library's current compromise signal.
-
-For the current implementation:
 
 ### Android
 
@@ -286,6 +325,8 @@ isCompromised = isJailbroken
 
 Use the individual properties if your application needs separate policies for compromised physical devices and virtual environments.
 
+---
+
 ## `isRooted()`
 
 ```ts
@@ -299,6 +340,8 @@ On iOS this returns:
 ```ts
 false
 ```
+
+---
 
 ## `isJailbroken()`
 
@@ -314,13 +357,15 @@ On Android this returns:
 false
 ```
 
+---
+
 ## `isEmulator()`
 
 ```ts
 isEmulator(): Promise<boolean>
 ```
 
-Returns whether the application is running in an emulator/simulator environment.
+Returns whether the application is running in an emulator or simulator environment.
 
 Android:
 
@@ -335,6 +380,8 @@ iOS:
 iOS Simulator → true
 Physical iPhone → false
 ```
+
+---
 
 ## `getRootDetectionResult()`
 
@@ -367,6 +414,7 @@ Example:
 ```ts
 {
   isRooted: true,
+
   checks: {
     rootManagementApp: true,
     dangerousBuildTags: false,
@@ -418,6 +466,8 @@ Emulator
  └── Hardware
 ```
 
+---
+
 ## iOS
 
 ```ts
@@ -448,13 +498,18 @@ Simulator
 
 # Recommended Application Architecture
 
-For applications that need device-security information throughout the application, call the native module once from a centralized React Context/provider.
+For applications that need device-security information throughout the application, call the native module once from a centralized React Context or provider.
 
 ```tsx
 import DeviceSecurity, {
   type DeviceSecurityStatus,
 } from '@shadahmad7/react-native-device-security';
-import React, {useEffect, useMemo, useState} from 'react';
+
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 const initialStatus: DeviceSecurityStatus = {
   isCompromised: false,
@@ -498,35 +553,35 @@ export const DeviceSecurityProvider = ({
 };
 ```
 
-Centralizing the detection avoids repeatedly invoking native security checks throughout the application.
+Centralizing detection avoids repeatedly invoking native security checks throughout the application.
 
 ---
 
 # Security Considerations
 
-This library provides **local device-security signals**.
+This library provides **local device-security signals** based on multiple native detection mechanisms.
 
-It is not intended to provide absolute device integrity guarantees.
+It is not intended to provide absolute device-integrity guarantees.
 
 Detection can potentially be bypassed using:
 
-- Modified operating systems
-- Runtime hooking
-- Dynamic instrumentation
-- Root/jailbreak concealment
-- Reverse engineering
-- Application patching
-- Native code modification
-- Runtime API interception
+* Modified operating systems
+* Runtime hooking
+* Dynamic instrumentation
+* Root/jailbreak concealment
+* Reverse engineering
+* Application patching
+* Native code modification
+* Runtime API interception
 
 Therefore:
 
-- Do not treat `isCompromised === false` as proof that a device is secure.
-- Do not rely on a single detection mechanism for high-risk operations.
-- Combine multiple independent signals when appropriate.
-- Keep sensitive security decisions out of JavaScript where practical.
-- Consider server-side/platform attestation for high-value operations.
-- Apply application-specific security policies to the returned status.
+* Do not treat `isCompromised === false` as proof that a device is secure.
+* Do not rely on a single detection mechanism for high-risk operations.
+* Combine multiple independent security signals when appropriate.
+* Keep sensitive security decisions out of JavaScript where practical.
+* Consider platform attestation for high-value operations.
+* Apply application-specific security policies to the returned status.
 
 The library itself does not transmit device-security information to a backend.
 
@@ -534,22 +589,46 @@ The library itself does not transmit device-security information to a backend.
 
 # OWASP Alignment
 
-The detection approach is informed by security-resilience concepts described in the OWASP Mobile Application Security Testing Guide (MASTG).
+The library's root and device-security detection approach is designed around security-resilience concepts described by the **OWASP Mobile Application Security Testing Guide (MASTG)**.
 
 Relevant areas include:
 
-- Root detection
-- Jailbreak detection
-- Emulator detection
-- Debugger detection
-- Runtime instrumentation detection
-- Application resilience
+* Root detection
+* Jailbreak detection
+* Emulator detection
+* Debugger detection
+* Runtime instrumentation detection
+* Application resilience
 
-See:
+The current Android implementation uses multiple root-detection signals rather than depending on a single check.
+
+These include:
+
+```text
+Root Management Applications
+        +
+su Binary Detection
+        +
+su Command Detection
+        +
+Writable System Directories
+        +
+Dangerous System Properties
+        +
+Root-related Files
+        +
+RW System Mounts
+        +
+Build Tag Inspection
+        ↓
+   Root Detection Signal
+```
+
+OWASP reference:
 
 https://mas.owasp.org/MASTG/
 
-> OWASP guidance is a security-testing and resilience reference. Local detection mechanisms are inherently bypassable on a sufficiently compromised device.
+> **Important:** OWASP alignment does not mean that local detection can guarantee device integrity. A sufficiently compromised device may bypass local security checks.
 
 ---
 
@@ -559,10 +638,10 @@ https://mas.owasp.org/MASTG/
 
 Test on:
 
-- Normal physical Android device
-- Android Emulator
-- Rooted Android test device
-- Rooted/configured emulator
+* Normal physical Android device
+* Android Emulator
+* Rooted Android test device
+* Rooted/configured emulator
 
 Normal device:
 
@@ -591,13 +670,15 @@ Rooted device:
 
 Use `getRootDetectionResult()` to determine which individual root checks triggered.
 
+---
+
 ## iOS
 
 Test on:
 
-- Normal physical iPhone
-- iOS Simulator
-- Jailbroken test device
+* Normal physical iPhone
+* iOS Simulator
+* Jailbroken test device
 
 iOS Simulator:
 
@@ -660,7 +741,9 @@ The JavaScript API remains consistent while the security implementation is platf
 
 ```text
 android/
+
 └── src/main/java/com/shadahmad7/reactnativedevicesecurity/
+
     ├── EmulatorDetection.kt
     ├── RootDetection.kt
     ├── ReactNativeDeviceSecurityModule.kt
@@ -672,6 +755,7 @@ android/
 
 ```text
 ios/
+
 ├── EmulatorDetection.swift
 ├── JailbreakDetection.swift
 ├── ReactNativeDeviceSecurity.swift
@@ -687,7 +771,7 @@ ios/
 The library exposes its native API through a TurboModule specification.
 
 ```ts
-import type {TurboModule} from 'react-native';
+import type {TurboModule } from 'react-native';
 import {TurboModuleRegistry} from 'react-native';
 
 export type RootDetectionChecks = {
@@ -715,10 +799,15 @@ export type DeviceSecurityStatus = {
 
 export interface Spec extends TurboModule {
   getSecurityStatus(): Promise<DeviceSecurityStatus>;
+
   isRooted(): Promise<boolean>;
+
   isJailbroken(): Promise<boolean>;
+
   isEmulator(): Promise<boolean>;
+
   isSecurityCompromised(): Promise<boolean>;
+
   getRootDetectionResult(): Promise<RootDetectionResult>;
 }
 
@@ -735,10 +824,11 @@ The native implementations are platform-specific while the JavaScript API remain
 
 The package is intended for React Native CLI applications and supports:
 
-- Android
-- iOS
-- React Native New Architecture
-- Legacy architecture compatibility
+* Android
+* iOS
+* React Native New Architecture
+* Legacy architecture compatibility
+* TurboModule-based native integration
 
 For exact React Native versions supported by a published package version, refer to its `peerDependencies`.
 
@@ -746,19 +836,25 @@ For exact React Native versions supported by a published package version, refer 
 
 # FAQ
 
-### Does this require a backend?
+## Does this provide OWASP root detection?
+
+The Android root-detection implementation follows an **OWASP MASTG-focused, multi-signal approach** using several independent native checks.
+
+It should be used as part of a broader mobile application security strategy rather than as the sole security control.
+
+## Does this require a backend?
 
 No.
 
 All current detection is performed locally on the device.
 
-### Does this require Expo?
+## Does this require Expo?
 
 No.
 
 The package is intended for React Native CLI applications.
 
-### Does `isCompromised` include emulators?
+## Does `isCompromised` include emulators?
 
 No, in the current implementation.
 
@@ -776,19 +872,19 @@ isCompromised = isJailbroken
 
 Use the individual properties if your application needs different policies.
 
-### Does the library detect Frida?
+## Does the library detect Frida?
 
 Comprehensive Frida and runtime-instrumentation detection is planned as a dedicated security layer.
 
 The current implementation should **not** be considered comprehensive Frida detection.
 
-### Can root/jailbreak detection detect every compromised device?
+## Can root/jailbreak detection detect every compromised device?
 
 No.
 
 No local detection mechanism can guarantee detection of every compromised environment.
 
-### Can I test root detection on a normal Android Emulator?
+## Can I test root detection on a normal Android Emulator?
 
 Not necessarily.
 
@@ -805,7 +901,7 @@ A standard emulator can return:
 
 For meaningful root-detection testing, use a rooted test device or deliberately configured rooted environment.
 
-### Can I test jailbreak detection on iOS Simulator?
+## Can I test jailbreak detection on iOS Simulator?
 
 No.
 
@@ -813,7 +909,7 @@ The simulator can test simulator detection but does not represent a jailbroken p
 
 A jailbroken physical device is required for meaningful jailbreak-detection testing.
 
-### Does the library send data anywhere?
+## Does the library send data anywhere?
 
 No.
 
@@ -825,33 +921,33 @@ The library performs its detection locally and does not transmit device-security
 
 ## Android
 
-- [ ] Debugger detection
-- [ ] `TracerPid` inspection
-- [ ] `ptrace` anti-debugging
-- [ ] Runtime thread detection
-- [ ] `/proc` memory-map scanning
-- [ ] Runtime symbol detection
-- [ ] Loaded library inspection
-- [ ] Frida detection
-- [ ] Runtime instrumentation detection
+* [ ] Debugger detection
+* [ ] `TracerPid` inspection
+* [ ] `ptrace` anti-debugging
+* [ ] Runtime thread detection
+* [ ] `/proc` memory-map scanning
+* [ ] Runtime symbol detection
+* [ ] Loaded library inspection
+* [ ] Frida detection
+* [ ] Runtime instrumentation detection
 
 ## iOS
 
-- [ ] Debugger detection
-- [ ] `sysctl` inspection
-- [ ] `ptrace` anti-debugging
-- [ ] Injected dylib detection
-- [ ] Suspicious thread detection
-- [ ] Runtime symbol detection
-- [ ] Frida detection
-- [ ] Runtime instrumentation detection
+* [ ] Debugger detection
+* [ ] `sysctl` inspection
+* [ ] `ptrace` anti-debugging
+* [ ] Injected dylib detection
+* [ ] Suspicious thread detection
+* [ ] Runtime symbol detection
+* [ ] Frida detection
+* [ ] Runtime instrumentation detection
 
 ## Platform Integrity
 
-- [ ] Android Play Integrity integration
-- [ ] Apple App Attest integration
-- [ ] DeviceCheck integration
-- [ ] Server-side security policy evaluation
+* [ ] Android Play Integrity integration
+* [ ] Apple App Attest integration
+* [ ] DeviceCheck integration
+* [ ] Server-side security policy evaluation
 
 ---
 

@@ -1,11 +1,11 @@
 {
   "name": "@shadahmad7/react-native-device-security",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "react-native": "dist/index.js",
-  "description": "A lightweight React Native TurboModule for detecting device security risks on iOS and Android. Provides native root, jailbreak, emulator, and simulator detection through a unified JavaScript API, with detailed Android root checks and platform-specific native implementations. Supports React Native New and Legacy Architectures without Expo or backend integration.",
+  "description": "A lightweight React Native TurboModule for OWASP-aligned device security and root detection on iOS and Android. Provides native root, jailbreak, emulator, and simulator detection through a unified JavaScript API, with detailed Android root checks and platform-specific native implementations. Supports React Native New and Legacy Architectures without Expo or backend integration.",
   "license": "MIT",
   "author": "Shad Ahmad",
   "homepage": "https://github.com/shadahmad7/react-native-device-security#readme",
