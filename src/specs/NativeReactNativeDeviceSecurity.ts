@@ -16,7 +16,13 @@ export type RootDetectionChecks = {
 
 export type RootDetectionResult = {
   isRooted: boolean;
+  reasons: string[];
   checks: RootDetectionChecks;
+};
+
+export type SecurityCheckResult = {
+  detected: boolean;
+  reasons: string[];
 };
 
 export type DeviceSecurityStatus = {
@@ -24,14 +30,24 @@ export type DeviceSecurityStatus = {
   isRooted: boolean;
   isJailbroken: boolean;
   isEmulator: boolean;
+
+  rootReasons: string[];
+  jailbreakReasons: string[];
+  emulatorReasons: string[];
+  compromiseReasons: string[];
 };
 
 export interface Spec extends TurboModule {
   getSecurityStatus(): Promise<DeviceSecurityStatus>;
-  isRooted(): Promise<boolean>;
-  isJailbroken(): Promise<boolean>;
-  isEmulator(): Promise<boolean>;
-  isSecurityCompromised(): Promise<boolean>;
+
+  isRooted(): Promise<SecurityCheckResult>;
+
+  isJailbroken(): Promise<SecurityCheckResult>;
+
+  isEmulator(): Promise<SecurityCheckResult>;
+
+  isSecurityCompromised(): Promise<SecurityCheckResult>;
+
   getRootDetectionResult(): Promise<RootDetectionResult>;
 }
 

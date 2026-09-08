@@ -5,6 +5,8 @@ package com.shadahmad7.reactnativedevicesecurity
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.WritableArray
+import com.facebook.react.bridge.WritableMap
 
 class ReactNativeDeviceSecurityModule(
     reactContext: ReactApplicationContext
@@ -22,19 +24,87 @@ class ReactNativeDeviceSecurityModule(
                 )
 
             val isRooted = rootDetectionResult.isRooted
-            val isEmulator = EmulatorDetection.isEmulator()
+
+            val isEmulator =
+                EmulatorDetection.isEmulator()
+
+            val rootReasons =
+                rootDetectionResult.reasons
+
+            val emulatorReasons =
+                if (isEmulator) {
+                    EmulatorDetection.getReasons()
+                } else {
+                    emptyList()
+                }
+
+            val jailbreakReasons =
+                emptyList<String>()
+
+            val compromiseReasons =
+                buildList {
+                    if (isRooted) {
+                        addAll(rootReasons)
+                    }
+
+                    if (isEmulator) {
+                        addAll(emulatorReasons)
+                    }
+
+                    if (jailbreakReasons.isNotEmpty()) {
+                        addAll(jailbreakReasons)
+                    }
+                }.distinct()
+
+            val isCompromised =
+                isRooted ||
+                    isEmulator ||
+                    jailbreakReasons.isNotEmpty()
 
             val status = Arguments.createMap().apply {
                 putBoolean(
                     "isCompromised",
+                    isCompromised
+                )
+
+                putBoolean(
+                    "isRooted",
                     isRooted
                 )
-                putBoolean("isRooted", isRooted)
-                putBoolean("isJailbroken", false)
-                putBoolean("isEmulator", isEmulator)
+
+                putBoolean(
+                    "isJailbroken",
+                    false
+                )
+
+                putBoolean(
+                    "isEmulator",
+                    isEmulator
+                )
+
+                putStringArray(
+                    "rootReasons",
+                    rootReasons
+                )
+
+                putStringArray(
+                    "jailbreakReasons",
+                    jailbreakReasons
+                )
+
+                putStringArray(
+                    "emulatorReasons",
+                    emulatorReasons
+                )
+
+                putStringArray(
+                    "compromiseReasons",
+                    compromiseReasons
+                )
             }
 
             promise.resolve(status)
+
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
                 "DEVICE_SECURITY_DETECTION_FAILED",
@@ -52,11 +122,18 @@ class ReactNativeDeviceSecurityModule(
 
     override fun isRooted(promise: Promise) {
         try {
-            promise.resolve(
-                RootDetection.isRooted(
+            val result =
+                RootDetection.getResult(
                     reactApplicationContext.packageManager
                 )
+
+            promise.resolve(
+                createSecurityCheckResult(
+                    detected = result.isRooted,
+                    reasons = result.reasons
+                )
             )
+
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
                 "ROOT_DETECTION_FAILED",
@@ -74,15 +151,34 @@ class ReactNativeDeviceSecurityModule(
 
     override fun isJailbroken(promise: Promise) {
         // Jailbreak detection is iOS-specific.
-        // Android always returns false.
-        promise.resolve(false)
+        // Android does not perform jailbreak detection.
+        promise.resolve(
+            createSecurityCheckResult(
+                detected = false,
+                reasons = emptyList()
+            )
+        )
     }
 
     override fun isEmulator(promise: Promise) {
         try {
-            promise.resolve(
+            val isEmulator =
                 EmulatorDetection.isEmulator()
+
+            val reasons =
+                if (isEmulator) {
+                    EmulatorDetection.getReasons()
+                } else {
+                    emptyList()
+                }
+
+            promise.resolve(
+                createSecurityCheckResult(
+                    detected = isEmulator,
+                    reasons = reasons
+                )
             )
+
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
                 "EMULATOR_DETECTION_FAILED",
@@ -100,17 +196,46 @@ class ReactNativeDeviceSecurityModule(
 
     override fun isSecurityCompromised(promise: Promise) {
         try {
-            val isRooted =
-                RootDetection.isRooted(
+            val rootDetectionResult =
+                RootDetection.getResult(
                     reactApplicationContext.packageManager
                 )
 
             val isEmulator =
                 EmulatorDetection.isEmulator()
 
+            val rootReasons =
+                rootDetectionResult.reasons
+
+            val emulatorReasons =
+                if (isEmulator) {
+                    EmulatorDetection.getReasons()
+                } else {
+                    emptyList()
+                }
+
+            val compromiseReasons =
+                buildList {
+                    if (rootDetectionResult.isRooted) {
+                        addAll(rootReasons)
+                    }
+
+                    if (isEmulator) {
+                        addAll(emulatorReasons)
+                    }
+                }.distinct()
+
+            val isCompromised =
+                rootDetectionResult.isRooted ||
+                    isEmulator
+
             promise.resolve(
-                isRooted
+                createSecurityCheckResult(
+                    detected = isCompromised,
+                    reasons = compromiseReasons
+                )
             )
+
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
                 "DEVICE_SECURITY_DETECTION_FAILED",
@@ -138,30 +263,37 @@ class ReactNativeDeviceSecurityModule(
                     "rootManagementApp",
                     result.checks.rootManagementApp
                 )
+
                 putBoolean(
                     "dangerousBuildTags",
                     result.checks.dangerousBuildTags
                 )
+
                 putBoolean(
                     "suBinary",
                     result.checks.suBinary
                 )
+
                 putBoolean(
                     "suCommand",
                     result.checks.suCommand
                 )
+
                 putBoolean(
                     "writableSystemDirectories",
                     result.checks.writableSystemDirectories
                 )
+
                 putBoolean(
                     "dangerousProperties",
                     result.checks.dangerousProperties
                 )
+
                 putBoolean(
                     "rootFiles",
                     result.checks.rootFiles
                 )
+
                 putBoolean(
                     "rwSystemMounts",
                     result.checks.rwSystemMounts
@@ -169,11 +301,24 @@ class ReactNativeDeviceSecurityModule(
             }
 
             val response = Arguments.createMap().apply {
-                putBoolean("isRooted", result.isRooted)
-                putMap("checks", checks)
+                putBoolean(
+                    "isRooted",
+                    result.isRooted
+                )
+
+                putStringArray(
+                    "reasons",
+                    result.reasons
+                )
+
+                putMap(
+                    "checks",
+                    checks
+                )
             }
 
             promise.resolve(response)
+
         } catch (e: ReactNativeDeviceSecurityException) {
             promise.reject(
                 "ROOT_DETECTION_FAILED",
@@ -187,6 +332,37 @@ class ReactNativeDeviceSecurityModule(
                 e
             )
         }
+    }
+
+    private fun createSecurityCheckResult(
+        detected: Boolean,
+        reasons: List<String>
+    ): WritableMap {
+        return Arguments.createMap().apply {
+            putBoolean(
+                "detected",
+                detected
+            )
+
+            putStringArray(
+                "reasons",
+                reasons
+            )
+        }
+    }
+
+    private fun WritableMap.putStringArray(
+        key: String,
+        values: List<String>
+    ) {
+        putArray(
+            key,
+            Arguments.createArray().apply {
+                values.forEach { value ->
+                    pushString(value)
+                }
+            }
+        )
     }
 
     companion object {

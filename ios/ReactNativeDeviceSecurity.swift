@@ -13,24 +13,40 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    do {
-      let isJailbroken = JailbreakDetection.isJailbroken()
-      let isEmulator = EmulatorDetection.isEmulator()
+    let jailbreakResult =
+      JailbreakDetection.detect()
 
-      let status: [String: Any] = [
-        "isCompromised": isJailbroken,
-        "isRooted": false,
-        "isJailbroken": isJailbroken,
-        "isEmulator": isEmulator
-      ]
+    let isEmulator =
+      EmulatorDetection.isEmulator()
 
-      resolve(status)
-    } catch {
-      rejectDetectionFailure(
-        reject: reject,
-        error: error
+    let emulatorReasons: [String] =
+      isEmulator
+        ? ["EMULATOR_DETECTED"]
+        : []
+
+    let compromiseReasons =
+      buildCompromiseReasons(
+        jailbreakReasons: jailbreakResult.reasons,
+        emulatorReasons: emulatorReasons
       )
-    }
+
+    let isCompromised =
+      jailbreakResult.detected ||
+      isEmulator
+
+    let status: [String: Any] = [
+      "isCompromised": isCompromised,
+      "isRooted": false,
+      "isJailbroken": jailbreakResult.detected,
+      "isEmulator": isEmulator,
+
+      "rootReasons": [],
+      "jailbreakReasons": jailbreakResult.reasons,
+      "emulatorReasons": emulatorReasons,
+      "compromiseReasons": compromiseReasons
+    ]
+
+    resolve(status)
   }
 
   // MARK: - Root
@@ -40,8 +56,13 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    // Root detection is Android-specific.
-    resolve(false)
+    // Root is Android terminology.
+    // iOS uses jailbreak detection.
+
+    resolve([
+      "detected": false,
+      "reasons": []
+    ])
   }
 
   // MARK: - Jailbreak
@@ -51,16 +72,13 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    do {
-      resolve(
-        JailbreakDetection.isJailbroken()
-      )
-    } catch {
-      rejectDetectionFailure(
-        reject: reject,
-        error: error
-      )
-    }
+    let result =
+      JailbreakDetection.detect()
+
+    resolve([
+      "detected": result.detected,
+      "reasons": result.reasons
+    ])
   }
 
   // MARK: - Emulator
@@ -70,16 +88,18 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    do {
-      resolve(
-        EmulatorDetection.isEmulator()
-      )
-    } catch {
-      rejectDetectionFailure(
-        reject: reject,
-        error: error
-      )
-    }
+    let detected =
+      EmulatorDetection.isEmulator()
+
+    let reasons: [String] =
+      detected
+        ? ["EMULATOR_DETECTED"]
+        : []
+
+    resolve([
+      "detected": detected,
+      "reasons": reasons
+    ])
   }
 
   // MARK: - Compromised
@@ -89,22 +109,31 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    do {
-      let isJailbroken =
-        JailbreakDetection.isJailbroken()
+    let jailbreakResult =
+      JailbreakDetection.detect()
 
-      let isEmulator =
-        EmulatorDetection.isEmulator()
+    let isEmulator =
+      EmulatorDetection.isEmulator()
 
-      resolve(
-        isJailbroken
+    let emulatorReasons: [String] =
+      isEmulator
+        ? ["EMULATOR_DETECTED"]
+        : []
+
+    let compromiseReasons =
+      buildCompromiseReasons(
+        jailbreakReasons: jailbreakResult.reasons,
+        emulatorReasons: emulatorReasons
       )
-    } catch {
-      rejectDetectionFailure(
-        reject: reject,
-        error: error
-      )
-    }
+
+    let isCompromised =
+      jailbreakResult.detected ||
+      isEmulator
+
+    resolve([
+      "detected": isCompromised,
+      "reasons": compromiseReasons
+    ])
   }
 
   // MARK: - Root Detection Result
@@ -114,12 +143,9 @@ class ReactNativeDeviceSecurity: NSObject {
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
-    // Root detection is Android-specific.
-    //
-    // We still return the complete cross-platform shape
-    // so consumers don't need platform-specific branching.
     resolve([
       "isRooted": false,
+      "reasons": [],
       "checks": [
         "rootManagementApp": false,
         "dangerousBuildTags": false,
@@ -133,19 +159,17 @@ class ReactNativeDeviceSecurity: NSObject {
     ])
   }
 
-  // MARK: - Error Handling
+  // MARK: - Compromise Reasons
 
-  private func rejectDetectionFailure(
-    reject: @escaping RCTPromiseRejectBlock,
-    error: Error
-  ) {
-    let securityError =
-      ReactNativeDeviceSecurityError.detectionFailed
-
-    reject(
-      "DEVICE_SECURITY_DETECTION_FAILED",
-      securityError.localizedDescription,
-      error
-    )
+  private func buildCompromiseReasons(
+    jailbreakReasons: [String],
+    emulatorReasons: [String]
+  ) -> [String] {
+    return Array(
+      Set(
+        jailbreakReasons +
+        emulatorReasons
+      )
+    ).sorted()
   }
 }

@@ -3,104 +3,207 @@
 import Foundation
 import UIKit
 
+struct SecurityCheckResult {
+  let detected: Bool
+  let reasons: [String]
+}
+
 enum JailbreakDetection {
 
-  static func isJailbroken() -> Bool {
+  // MARK: - Public
+
+  static func detect() -> SecurityCheckResult {
     #if targetEnvironment(simulator)
-      return false
+
+      // Never report the iOS simulator as jailbroken.
+      return SecurityCheckResult(
+        detected: false,
+        reasons: []
+      )
+
     #else
 
-      if hasSuspiciousFiles() {
-        return true
-      }
+      var reasons: [String] = []
+
+      reasons.append(contentsOf: suspiciousFileReasons())
 
       if canWriteOutsideSandbox() {
-        return true
+        reasons.append("SANDBOX_ESCAPE")
       }
 
       if canAccessSuspiciousURLScheme() {
-        return true
+        reasons.append("SUSPICIOUS_URL_SCHEME")
       }
 
-      if hasSuspiciousEnvironmentVariables() {
-        return true
-      }
+      reasons.append(contentsOf: suspiciousEnvironmentReasons())
 
-      return false
+      let uniqueReasons = Array(
+        Set(reasons)
+      ).sorted()
+
+      return SecurityCheckResult(
+        detected: !uniqueReasons.isEmpty,
+        reasons: uniqueReasons
+      )
+
     #endif
   }
 
-  // MARK: - File Checks
+  // MARK: - Suspicious Files
 
-  private static func hasSuspiciousFiles() -> Bool {
-    let suspiciousPaths = [
-      // Package managers / jailbreak apps
-      "/Applications/Cydia.app",
-      "/Applications/Sileo.app",
-      "/Applications/Zebra.app",
-      "/Applications/FakeCarrier.app",
-      "/Applications/Icy.app",
-      "/Applications/IntelliScreen.app",
-      "/Applications/MxTube.app",
-      "/Applications/RockApp.app",
-      "/Applications/SBSettings.app",
-      "/Applications/WinterBoard.app",
-      "/Applications/blackra1n.app",
+  private static func suspiciousFileReasons() -> [String] {
+    let suspiciousFiles: [(path: String, reason: String)] = [
 
-      // MobileSubstrate / injection
-      "/Library/MobileSubstrate/MobileSubstrate.dylib",
-      "/Library/MobileSubstrate/DynamicLibraries/LiveClock.plist",
-      "/Library/MobileSubstrate/DynamicLibraries/Veency.plist",
+      // Jailbreak/package managers
+      (
+        "/Applications/Cydia.app",
+        "CYDIA_INSTALLED"
+      ),
+      (
+        "/Applications/Sileo.app",
+        "SILEO_INSTALLED"
+      ),
+      (
+        "/Applications/Zebra.app",
+        "ZEBRA_INSTALLED"
+      ),
+      (
+        "/Applications/FakeCarrier.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/Icy.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/IntelliScreen.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/MxTube.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/RockApp.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/SBSettings.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/WinterBoard.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
+      (
+        "/Applications/blackra1n.app",
+        "JAILBREAK_APP_DETECTED"
+      ),
 
-      // SSH / shell
-      "/bin/bash",
-      "/bin/sh",
-      "/usr/bin/ssh",
-      "/usr/bin/sshd",
-      "/usr/sbin/sshd",
-      "/etc/ssh/sshd_config",
+      // MobileSubstrate
+      (
+        "/Library/MobileSubstrate/MobileSubstrate.dylib",
+        "MOBILE_SUBSTRATE"
+      ),
+      (
+        "/Library/MobileSubstrate/DynamicLibraries/LiveClock.plist",
+        "MOBILE_SUBSTRATE"
+      ),
+      (
+        "/Library/MobileSubstrate/DynamicLibraries/Veency.plist",
+        "MOBILE_SUBSTRATE"
+      ),
 
-      // Package managers
-      "/etc/apt",
-      "/private/etc/apt",
-      "/private/var/lib/apt",
-      "/private/var/lib/cydia",
-      "/var/cache/apt",
-      "/var/lib/apt",
-      "/var/lib/cydia",
+      // Package management
+      (
+        "/etc/apt",
+        "APT_ARTIFACT"
+      ),
+      (
+        "/private/etc/apt",
+        "APT_ARTIFACT"
+      ),
+      (
+        "/private/var/lib/apt",
+        "APT_ARTIFACT"
+      ),
+      (
+        "/private/var/lib/cydia",
+        "CYDIA_ARTIFACT"
+      ),
+      (
+        "/var/cache/apt",
+        "APT_ARTIFACT"
+      ),
+      (
+        "/var/lib/apt",
+        "APT_ARTIFACT"
+      ),
+      (
+        "/var/lib/cydia",
+        "CYDIA_ARTIFACT"
+      ),
 
-      // Jailbreak-specific files
-      "/private/var/stash",
-      "/private/var/tmp/cydia.log",
-      "/var/tmp/cydia.log",
-      "/var/log/syslog",
+      // Jailbreak-specific directories/files
+      (
+        "/private/var/stash",
+        "JAILBREAK_STASH"
+      ),
+      (
+        "/private/var/tmp/cydia.log",
+        "CYDIA_ARTIFACT"
+      ),
+      (
+        "/var/tmp/cydia.log",
+        "CYDIA_ARTIFACT"
+      ),
 
-      // Dynamic analysis / reverse engineering tools
-      "/usr/sbin/frida-server",
-      "/usr/bin/cycript",
-      "/usr/local/bin/cycript",
-      "/usr/lib/libcycript.dylib",
+      // Dynamic analysis tools
+      (
+        "/usr/sbin/frida-server",
+        "FRIDA_SERVER"
+      ),
+      (
+        "/usr/bin/cycript",
+        "CYCRIPT"
+      ),
+      (
+        "/usr/local/bin/cycript",
+        "CYCRIPT"
+      ),
+      (
+        "/usr/lib/libcycript.dylib",
+        "CYCRIPT"
+      ),
 
-      // Launch daemons
-      "/System/Library/LaunchDaemons/com.saurik.Cydia.Startup.plist",
-      "/System/Library/LaunchDaemons/com.ikey.bbot.plist",
-
-      // Other common jailbreak artifacts
-      "/usr/libexec/sftp-server",
-      "/usr/libexec/ssh-keysign"
+      // Jailbreak launch daemons
+      (
+        "/System/Library/LaunchDaemons/com.saurik.Cydia.Startup.plist",
+        "JAILBREAK_LAUNCH_DAEMON"
+      ),
+      (
+        "/System/Library/LaunchDaemons/com.ikey.bbot.plist",
+        "JAILBREAK_LAUNCH_DAEMON"
+      )
     ]
 
-    return suspiciousPaths.contains {
-      FileManager.default.fileExists(atPath: $0)
+    var reasons: [String] = []
+
+    for item in suspiciousFiles {
+      if FileManager.default.fileExists(atPath: item.path) {
+        reasons.append(item.reason)
+      }
     }
+
+    return reasons
   }
 
   // MARK: - Sandbox Escape
 
   private static func canWriteOutsideSandbox() -> Bool {
     let testPaths = [
-      "/private/jailbreak.txt",
-      "/private/device-security-test.txt"
+      "/private/device-security-test.txt",
+      "/private/jailbreak-test.txt"
     ]
 
     for path in testPaths {
@@ -111,9 +214,12 @@ enum JailbreakDetection {
           encoding: .utf8
         )
 
-        try? FileManager.default.removeItem(atPath: path)
+        try? FileManager.default.removeItem(
+          atPath: path
+        )
 
         return true
+
       } catch {
         continue
       }
@@ -122,7 +228,7 @@ enum JailbreakDetection {
     return false
   }
 
-  // MARK: - URL Scheme Checks
+  // MARK: - URL Schemes
 
   private static func canAccessSuspiciousURLScheme() -> Bool {
     let schemes = [
@@ -145,23 +251,41 @@ enum JailbreakDetection {
     return false
   }
 
-  // MARK: - Dynamic Library / Injection Checks
+  // MARK: - Environment
 
-  private static func hasSuspiciousEnvironmentVariables() -> Bool {
+  private static func suspiciousEnvironmentReasons() -> [String] {
     let suspiciousVariables = [
       "DYLD_INSERT_LIBRARIES",
       "DYLD_FRAMEWORK_PATH",
       "DYLD_LIBRARY_PATH"
     ]
 
-    let environment = ProcessInfo.processInfo.environment
+    let environment =
+      ProcessInfo.processInfo.environment
 
-    return suspiciousVariables.contains { variable in
-      guard let value = environment[variable] else {
-        return false
+    var reasons: [String] = []
+
+    for variable in suspiciousVariables {
+      guard let value = environment[variable],
+            !value.isEmpty else {
+        continue
       }
 
-      return !value.isEmpty
+      switch variable {
+      case "DYLD_INSERT_LIBRARIES":
+        reasons.append("DYLD_INSERT_LIBRARIES")
+
+      case "DYLD_FRAMEWORK_PATH":
+        reasons.append("DYLD_FRAMEWORK_PATH")
+
+      case "DYLD_LIBRARY_PATH":
+        reasons.append("DYLD_LIBRARY_PATH")
+
+      default:
+        break
+      }
     }
+
+    return reasons
   }
 }

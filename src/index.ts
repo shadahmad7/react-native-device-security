@@ -4,38 +4,32 @@ import NativeReactNativeDeviceSecurity, {
   type DeviceSecurityStatus,
   type RootDetectionChecks,
   type RootDetectionResult,
-} from './specs/NativeReactNativeDeviceSecurity';
-
+  type SecurityCheckResult,
+} from "./specs/NativeReactNativeDeviceSecurity";
 export type {
   DeviceSecurityStatus,
   RootDetectionChecks,
   RootDetectionResult,
+  SecurityCheckResult,
 };
-
 export function getSecurityStatus(): Promise<DeviceSecurityStatus> {
   return NativeReactNativeDeviceSecurity.getSecurityStatus();
 }
-
-export function isRooted(): Promise<boolean> {
+export function isRooted(): Promise<SecurityCheckResult> {
   return NativeReactNativeDeviceSecurity.isRooted();
 }
-
-export function isJailbroken(): Promise<boolean> {
+export function isJailbroken(): Promise<SecurityCheckResult> {
   return NativeReactNativeDeviceSecurity.isJailbroken();
 }
-
-export function isEmulator(): Promise<boolean> {
+export function isEmulator(): Promise<SecurityCheckResult> {
   return NativeReactNativeDeviceSecurity.isEmulator();
 }
-
-export function isSecurityCompromised(): Promise<boolean> {
+export function isSecurityCompromised(): Promise<SecurityCheckResult> {
   return NativeReactNativeDeviceSecurity.isSecurityCompromised();
 }
-
 export function getRootDetectionResult(): Promise<RootDetectionResult> {
   return NativeReactNativeDeviceSecurity.getRootDetectionResult();
 }
-
 export default {
   getSecurityStatus,
   isRooted,
