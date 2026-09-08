@@ -9,8 +9,6 @@ A lightweight, native **device security detection TurboModule for React Native C
 * Android emulator detection
 * iOS simulator detection
 
-The Android root-detection implementation uses multiple independent native security checks based on security-resilience practices described by the **OWASP Mobile Application Security Testing Guide (MASTG)**.
-
 All detection is performed locally using native Kotlin and Swift implementations.
 
 The library does **not require a backend or server-side integration**.
@@ -27,11 +25,11 @@ The library does **not require a backend or server-side integration**.
 * OWASP-focused root detection
 * Root-management application detection
 * `su` binary detection
-* `su` command detection
-* Writable system directory detection
-* Dangerous Android system property detection
-* Root-related file detection
-* Read-write system mount detection
+* `su` root-access detection
+* Writable system directory inspection
+* Dangerous Android system property inspection
+* Root-related file and directory inspection
+* Read-write system mount inspection
 * Android build-tag inspection
 * Android emulator detection
 * Build fingerprint analysis
@@ -57,10 +55,81 @@ The library does **not require a backend or server-side integration**.
 * React Native New Architecture support
 * Legacy architecture compatibility
 * OWASP MASTG-focused security checks
+* Local-only detection
 * No backend integration
 * No Expo dependency
-* Local-only detection
 * Designed for centralized application-level security checks
+
+---
+
+# Detection Model
+
+The library separates **root detection signals** from **diagnostic checks**.
+
+This distinction is important because not every security indicator is sufficient by itself to classify a device as rooted.
+
+## Strong Root Signals
+
+The following signals can contribute directly to `isRooted`:
+
+* Root-management application detected
+* Known `su` binary detected
+* Successful `su` root-access check
+
+When one or more strong signals are detected:
+
+```text
+isRooted = true
+```
+
+The corresponding signals are returned in:
+
+```ts
+reasons
+```
+
+## Diagnostic Signals
+
+The library also performs additional checks that can provide useful security information but are **not independently treated as proof of root**.
+
+These include:
+
+* Dangerous build tags
+* Dangerous system properties
+* Root-related files
+* Read-write system mounts
+* Writable system directories
+
+These values are returned through:
+
+```ts
+checks
+```
+
+They do not automatically make:
+
+```ts
+isRooted
+```
+
+`true`.
+
+This design helps reduce false positives on modern Android devices where filesystem layout, mount namespaces, dynamic partitions, and system configuration can produce indicators that resemble traditional rooted environments.
+
+For example, a device may return:
+
+```ts
+{
+  isRooted: false,
+  reasons: [],
+  checks: {
+    rootFiles: true,
+    rwSystemMounts: true
+  }
+}
+```
+
+This means diagnostic indicators were detected, but no sufficiently strong root signal was confirmed.
 
 ---
 
@@ -70,20 +139,25 @@ The library is designed around **multiple independent device-security signals** 
 
 The detection strategy is informed by the **OWASP Mobile Application Security Testing Guide (MASTG)** and mobile application resilience principles.
 
-The objective is to make compromise detection more resilient by combining multiple indicators.
+The objective is to make compromise detection more resilient by combining multiple indicators while avoiding classification based solely on weak signals.
 
-For Android, root detection includes checks for:
+For Android, root detection includes:
+
+### Root confirmation signals
 
 * Root-management applications
 * Known `su` binaries
-* `su` command availability
+* `su` root-access detection
+
+### Supporting diagnostic signals
+
 * Writable system directories
 * Dangerous Android system properties
 * Root-related files and directories
 * Read-write system mounts
-* Dangerous build tags
+* Dangerous build tags such as `test-keys`
 
-For iOS, jailbreak detection includes multiple filesystem and environment checks.
+The distinction between confirmation and diagnostic signals is intentional.
 
 > OWASP provides security guidance and testing methodologies. This library should not be interpreted as providing an absolute guarantee of device integrity or protection against all forms of compromise.
 
@@ -101,20 +175,53 @@ The library uses multiple independent detection signals to reduce reliance on a 
 
 ### Root Detection
 
-The Android implementation currently checks for:
+The Android implementation performs the following checks:
 
-* Root-management applications
-* Known `su` binaries
-* `su` command availability
-* Writable system directories
-* Dangerous system properties
-* Root-related files and directories
-* Read-write system mounts
-* Dangerous build tags such as `test-keys`
+| Check                       | Purpose                                     | Contributes directly to `isRooted` |
+| --------------------------- | ------------------------------------------- | ---------------------------------- |
+| Root-management app         | Detect known root-management applications   | Yes                                |
+| `su` binary                 | Detect known `su` binaries                  | Yes                                |
+| `su` command                | Verify available root access                | Yes                                |
+| Writable system directories | Inspect system filesystem permissions       | No                                 |
+| Dangerous properties        | Inspect Android security-related properties | No                                 |
+| Root files                  | Detect known root-related artifacts         | No                                 |
+| RW system mounts            | Inspect system mount configuration          | No                                 |
+| Build tags                  | Detect tags such as `test-keys`             | No                                 |
 
-These checks are intentionally independent so that detection does not depend on a single indicator.
+This separation is intentional.
 
-### Emulator Detection
+A diagnostic check may indicate an unusual or security-relevant configuration without proving that the application currently has root privileges.
+
+### Root Reasons
+
+When root is detected, the `reasons` array contains the strong signals that caused the root classification.
+
+Example:
+
+```ts
+{
+  isRooted: true,
+  reasons: [
+    "ROOT_MANAGEMENT_APP_DETECTED",
+    "SU_COMMAND_DETECTED"
+  ]
+}
+```
+
+If only diagnostic checks are triggered:
+
+```ts
+{
+  isRooted: false,
+  reasons: []
+}
+```
+
+while the individual checks remain available through `checks`.
+
+---
+
+## Emulator Detection
 
 Android emulator detection uses native device information including:
 
@@ -131,11 +238,23 @@ Android emulator detection uses native device information including:
 * SDK/emulator product identifiers
 * Genymotion indicators
 
+Emulator detection is independent from root detection.
+
+Therefore:
+
+```text
+Android Emulator
+    isEmulator = true
+    isRooted = false
+```
+
+is a valid result.
+
 ---
 
-## iOS
+# iOS
 
-### Jailbreak Detection
+## Jailbreak Detection
 
 The iOS implementation checks for multiple jailbreak indicators.
 
@@ -181,6 +300,88 @@ isEmulator: true
 ```
 
 A simulator is **not** treated as a jailbroken device.
+
+---
+
+# Detection Reasons
+
+Security results expose **reasons** explaining why a security signal was detected.
+
+## Root Reasons
+
+Android root reasons represent strong root-detection signals.
+
+Possible values include:
+
+```text
+ROOT_MANAGEMENT_APP_DETECTED
+SU_BINARY_DETECTED
+SU_COMMAND_DETECTED
+```
+
+These reasons contribute to:
+
+```ts
+isRooted: true
+```
+
+## Emulator Reasons
+
+When emulator detection is triggered, the emulator-specific reasons are returned separately.
+
+Example:
+
+```ts
+{
+  detected: true,
+  reasons: [
+    "EMULATOR_DETECTED"
+  ]
+}
+```
+
+## Jailbreak Reasons
+
+On iOS, jailbreak detection returns the jailbreak indicators that were detected.
+
+Examples can include identifiers associated with:
+
+```text
+CYDIA_INSTALLED
+SILEO_INSTALLED
+ZEBRA_INSTALLED
+MOBILE_SUBSTRATE
+APT_ARTIFACT
+SANDBOX_ESCAPE
+```
+
+## Compromise Reasons
+
+`compromiseReasons` combines the applicable platform security reasons.
+
+For example:
+
+```ts
+{
+  isCompromised: true,
+  compromiseReasons: [
+    "SU_COMMAND_DETECTED"
+  ]
+}
+```
+
+On an emulator:
+
+```ts
+{
+  isCompromised: true,
+  compromiseReasons: [
+    "EMULATOR_DETECTED"
+  ]
+}
+```
+
+> Applications should use the boolean security properties for policy decisions rather than assuming that every diagnostic check represents confirmed compromise.
 
 ---
 
@@ -276,7 +477,11 @@ Example:
   isCompromised: false,
   isRooted: false,
   isJailbroken: false,
-  isEmulator: false
+  isEmulator: false,
+  rootReasons: [],
+  jailbreakReasons: [],
+  emulatorReasons: [],
+  compromiseReasons: []
 }
 ```
 
@@ -298,8 +503,48 @@ type DeviceSecurityStatus = {
   isRooted: boolean;
   isJailbroken: boolean;
   isEmulator: boolean;
+
+  rootReasons?: string[];
+  jailbreakReasons?: string[];
+  emulatorReasons?: string[];
+  compromiseReasons?: string[];
 };
 ```
+
+### Android
+
+Example:
+
+```ts
+{
+  isCompromised: true,
+  isRooted: true,
+  isJailbroken: false,
+  isEmulator: false,
+
+  rootReasons: [
+    "SU_COMMAND_DETECTED"
+  ],
+
+  jailbreakReasons: [],
+
+  emulatorReasons: [],
+
+  compromiseReasons: [
+    "SU_COMMAND_DETECTED"
+  ]
+}
+```
+
+### Diagnostic checks
+
+Detailed Android root diagnostics are available separately through:
+
+```ts
+getRootDetectionResult()
+```
+
+This keeps diagnostic information separate from the primary root decision.
 
 ---
 
@@ -314,16 +559,23 @@ Returns the library's current compromise signal.
 ### Android
 
 ```text
-isCompromised = isRooted
+isCompromised = isRooted || isEmulator
 ```
 
 ### iOS
 
 ```text
-isCompromised = isJailbroken
+isCompromised = isJailbroken || isEmulator
 ```
 
-Use the individual properties if your application needs separate policies for compromised physical devices and virtual environments.
+Use the individual properties if your application needs separate policies for:
+
+* rooted devices
+* jailbroken devices
+* emulators
+* simulators
+
+> If your application wants to block only compromised physical devices, use `isRooted` / `isJailbroken` instead of treating emulator detection as equivalent to root or jailbreak.
 
 ---
 
@@ -340,6 +592,8 @@ On iOS this returns:
 ```ts
 false
 ```
+
+The result is based on strong root-detection signals rather than diagnostic indicators alone.
 
 ---
 
@@ -405,28 +659,66 @@ type RootDetectionChecks = {
 
 type RootDetectionResult = {
   isRooted: boolean;
+  reasons: string[];
   checks: RootDetectionChecks;
 };
 ```
 
-Example:
+### Example: confirmed root
 
 ```ts
 {
   isRooted: true,
 
+  reasons: [
+    "SU_COMMAND_DETECTED"
+  ],
+
   checks: {
-    rootManagementApp: true,
+    rootManagementApp: false,
     dangerousBuildTags: false,
     suBinary: true,
     suCommand: true,
     writableSystemDirectories: false,
     dangerousProperties: false,
-    rootFiles: true,
+    rootFiles: false,
     rwSystemMounts: false
   }
 }
 ```
+
+### Example: diagnostic indicators only
+
+A normal modern Android device may report diagnostic indicators without being classified as rooted:
+
+```ts
+{
+  isRooted: false,
+
+  reasons: [],
+
+  checks: {
+    rootManagementApp: false,
+    dangerousBuildTags: false,
+    suBinary: false,
+    suCommand: false,
+    writableSystemDirectories: false,
+    dangerousProperties: false,
+    rootFiles: true,
+    rwSystemMounts: true
+  }
+}
+```
+
+In this case:
+
+```ts
+isRooted === false
+```
+
+because no strong root signal was confirmed.
+
+This distinction helps prevent false positives caused by modern Android filesystem and mount configurations.
 
 ---
 
@@ -439,7 +731,12 @@ Example:
   isCompromised: boolean,
   isRooted: boolean,
   isJailbroken: false,
-  isEmulator: boolean
+  isEmulator: boolean,
+
+  rootReasons: string[],
+  jailbreakReasons: string[],
+  emulatorReasons: string[],
+  compromiseReasons: string[]
 }
 ```
 
@@ -447,14 +744,14 @@ The Android implementation performs native checks for:
 
 ```text
 Root
- ├── Root management apps
- ├── su binaries
- ├── su command
- ├── Writable system directories
- ├── Dangerous properties
- ├── Root files
- ├── RW system mounts
- └── Build tags
+ ├── Root management apps        ← root signal
+ ├── su binaries                 ← root signal
+ ├── su root access              ← root signal
+ ├── Writable system directories ← diagnostic
+ ├── Dangerous properties        ← diagnostic
+ ├── Root files                 ← diagnostic
+ ├── RW system mounts           ← diagnostic
+ └── Build tags                 ← diagnostic
 
 Emulator
  ├── Build fingerprint
@@ -466,6 +763,8 @@ Emulator
  └── Hardware
 ```
 
+The distinction between root signals and diagnostics is intentional.
+
 ---
 
 ## iOS
@@ -475,7 +774,10 @@ Emulator
   isCompromised: boolean,
   isRooted: false,
   isJailbroken: boolean,
-  isEmulator: boolean
+  isEmulator: boolean,
+
+  jailbreakReasons: string[],
+  compromiseReasons: string[]
 }
 ```
 
@@ -516,6 +818,10 @@ const initialStatus: DeviceSecurityStatus = {
   isRooted: false,
   isJailbroken: false,
   isEmulator: false,
+  rootReasons: [],
+  jailbreakReasons: [],
+  emulatorReasons: [],
+  compromiseReasons: [],
 };
 
 export const DeviceSecurityProvider = ({
@@ -578,7 +884,9 @@ Therefore:
 
 * Do not treat `isCompromised === false` as proof that a device is secure.
 * Do not rely on a single detection mechanism for high-risk operations.
-* Combine multiple independent security signals when appropriate.
+* Use `reasons` to understand which strong signals caused a detection.
+* Use `checks` for diagnostic and security-analysis information.
+* Do not automatically classify every diagnostic check as confirmed root.
 * Keep sensitive security decisions out of JavaScript where practical.
 * Consider platform attestation for high-value operations.
 * Apply application-specific security policies to the returned status.
@@ -602,27 +910,35 @@ Relevant areas include:
 
 The current Android implementation uses multiple root-detection signals rather than depending on a single check.
 
-These include:
+These signals are separated into:
 
 ```text
-Root Management Applications
-        +
-su Binary Detection
-        +
-su Command Detection
-        +
-Writable System Directories
-        +
-Dangerous System Properties
-        +
-Root-related Files
-        +
-RW System Mounts
-        +
-Build Tag Inspection
-        ↓
-   Root Detection Signal
+Strong Root Signals
+        │
+        ├── Root management application
+        ├── su binary
+        └── Successful su root access
+        │
+        ▼
+     isRooted
 ```
+
+and:
+
+```text
+Diagnostic Signals
+        │
+        ├── Build tags
+        ├── System properties
+        ├── Root files
+        ├── RW mounts
+        └── Writable directories
+        │
+        ▼
+      checks
+```
+
+This distinction reduces the likelihood that a normal modern Android configuration is incorrectly classified as rooted.
 
 OWASP reference:
 
@@ -643,7 +959,7 @@ Test on:
 * Rooted Android test device
 * Rooted/configured emulator
 
-Normal device:
+### Normal device
 
 ```ts
 {
@@ -652,23 +968,52 @@ Normal device:
 }
 ```
 
-Android Emulator:
+A normal physical device may still have diagnostic checks enabled:
 
 ```ts
 {
-  isEmulator: true
+  isRooted: false,
+
+  checks: {
+    rootFiles: true,
+    rwSystemMounts: true
+  }
 }
 ```
 
-Rooted device:
+This does not necessarily indicate root.
+
+### Android Emulator
 
 ```ts
 {
-  isRooted: true
+  isEmulator: true,
+  isRooted: false
 }
 ```
 
-Use `getRootDetectionResult()` to determine which individual root checks triggered.
+### Rooted device
+
+```ts
+{
+  isRooted: true,
+  reasons: [
+    "SU_COMMAND_DETECTED"
+  ]
+}
+```
+
+Use:
+
+```ts
+getRootDetectionResult()
+```
+
+to determine:
+
+1. Whether the device was classified as rooted.
+2. Which strong root reasons caused the classification.
+3. Which additional diagnostic checks were triggered.
 
 ---
 
@@ -680,7 +1025,7 @@ Test on:
 * iOS Simulator
 * Jailbroken test device
 
-iOS Simulator:
+### iOS Simulator
 
 ```ts
 {
@@ -689,7 +1034,7 @@ iOS Simulator:
 }
 ```
 
-Normal physical iPhone:
+### Normal physical iPhone
 
 ```ts
 {
@@ -706,28 +1051,34 @@ Jailbreak detection requires a jailbroken physical device for meaningful validat
 
 ```text
 React Native Application
-          |
-          v
+
+          │
+          ▼
+
 DeviceSecurity.getSecurityStatus()
-          |
-          v
+
+          │
+          ▼
+
      TurboModule API
-          |
-     +----+----+
-     |         |
-     v         v
+
+          │
+     ┌────┴────┐
+     │         │
+     ▼         ▼
  Android     iOS
   Kotlin     Swift
-     |         |
-     v         v
+     │         │
+     ▼         ▼
    Root     Jailbreak
-   +          +
+     +          +
  Emulator   Simulator
  Detection  Detection
-     |         |
-     +----+----+
-          |
-          v
+     │         │
+     └────┬────┘
+          │
+          ▼
+
  DeviceSecurityStatus
 ```
 
@@ -771,8 +1122,8 @@ ios/
 The library exposes its native API through a TurboModule specification.
 
 ```ts
-import type {TurboModule } from 'react-native';
-import {TurboModuleRegistry} from 'react-native';
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
 
 export type RootDetectionChecks = {
   rootManagementApp: boolean;
@@ -787,6 +1138,7 @@ export type RootDetectionChecks = {
 
 export type RootDetectionResult = {
   isRooted: boolean;
+  reasons: string[];
   checks: RootDetectionChecks;
 };
 
@@ -795,6 +1147,11 @@ export type DeviceSecurityStatus = {
   isRooted: boolean;
   isJailbroken: boolean;
   isEmulator: boolean;
+
+  rootReasons: string[];
+  jailbreakReasons: string[];
+  emulatorReasons: string[];
+  compromiseReasons: string[];
 };
 
 export interface Spec extends TurboModule {
@@ -815,8 +1172,6 @@ export default TurboModuleRegistry.getEnforcing<Spec>(
   'ReactNativeDeviceSecurity',
 );
 ```
-
-The native implementations are platform-specific while the JavaScript API remains consistent.
 
 ---
 
@@ -840,6 +1195,11 @@ For exact React Native versions supported by a published package version, refer 
 
 The Android root-detection implementation follows an **OWASP MASTG-focused, multi-signal approach** using several independent native checks.
 
+The library distinguishes between:
+
+* strong root signals used to determine `isRooted`
+* diagnostic signals exposed through `checks`
+
 It should be used as part of a broader mobile application security strategy rather than as the sole security control.
 
 ## Does this require a backend?
@@ -854,20 +1214,58 @@ No.
 
 The package is intended for React Native CLI applications.
 
+## What are detection reasons?
+
+Detection reasons explain which security signals caused a positive detection.
+
+For Android root detection, `reasons` contains strong root signals such as:
+
+```text
+ROOT_MANAGEMENT_APP_DETECTED
+SU_BINARY_DETECTED
+SU_COMMAND_DETECTED
+```
+
+Additional checks such as root files and read-write mounts are available through `checks`.
+
+## Are all checks treated as root?
+
+No.
+
+This is an important part of the detection model.
+
+Checks such as:
+
+```text
+ROOT_FILE_DETECTED
+RW_SYSTEM_MOUNT_DETECTED
+DANGEROUS_BUILD_TAGS_DETECTED
+```
+
+are diagnostic indicators.
+
+They do not independently make:
+
+```ts
+isRooted === true
+```
+
+This helps avoid false positives on modern Android devices.
+
 ## Does `isCompromised` include emulators?
 
-No, in the current implementation.
+Yes, in the current implementation.
 
 Android:
 
 ```text
-isCompromised = isRooted
+isCompromised = isRooted || isEmulator
 ```
 
 iOS:
 
 ```text
-isCompromised = isJailbroken
+isCompromised = isJailbroken || isEmulator
 ```
 
 Use the individual properties if your application needs different policies.
